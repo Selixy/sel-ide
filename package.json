@@ -1,0 +1,72 @@
+{
+  "name": "sel-ide",
+  "displayName": "Sel IDE",
+  "description": "Auto-complétion IA basée sur GPT-4.1 nano après idle-delay",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:*",
+    "onCommand:sel-ide.testRequest"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Sel IDE",
+      "properties": {
+        "selIDE.idleDelay": {
+          "type": "number",
+          "default": 250,
+          "description": "Délai (ms) après dernière frappe avant génération IA"
+        },
+        "selIDE.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Clé secrète pour l’API OpenAI"
+        },
+        "selIDE.apiUrl": {
+          "type": "string",
+          "default": "https://api.openai.com/v1/chat/completions",
+          "description": "Endpoint de génération IA"
+        },
+        "selIDE.model": {
+          "type": "string",
+          "default": "gpt-4.1-nano",
+          "description": "Modèle à interroger"
+        },
+        "selIDE.maxTokens": {
+          "type": "number",
+          "default": 64,
+          "description": "Nombre maximal de tokens générés"
+        },
+        "selIDE.temperature": {
+          "type": "number",
+          "default": 0.2,
+          "description": "Contrôle la créativité (0–2)"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "sel-ide.testRequest",
+        "title": "Sel IDE: Test API Request"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "echo \"No tests\""
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "20.x",
+    "@types/vscode": "^1.60.0",
+    "eslint": "^9.25.1"
+  }
+}
