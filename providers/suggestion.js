@@ -1,53 +1,57 @@
-// providers/suggestion.js
-const vscode               = require('vscode');
-const { generateCompletion } = require('./generationAPI');
+const vscode = require('vscode');
+const { applyGhost, clearAll } = require('./decorationProvider');
 
-/**
- * Fournit les InlineCompletionItems à partir
- * de l’objet retourné par generateCompletion.
- */
-async function provideInlineCompletionItems(document, position) {
-  let spec;
-  try {
-    spec = await generateCompletion(document, position);
-  } catch (e) {
-    console.error('Sel_IDE DEBUG [suggestion] API error →', e);
-    return [];
-  }
+// État mémorisé...
+let lastEditor, lastStartPos, lastLines, lastColor;
 
-  const { isCompletion, startLine, endLine, replacement } = spec;
-
-  // On supprime toujours la ligne courante
-  const currentLine = document.lineAt(position.line);
-  const fullLineRange = new vscode.Range(
-    new vscode.Position(position.line, 0),
-    new vscode.Position(position.line, currentLine.text.length)
+async function acceptSuggestion() {
+  const editor = lastEditor;
+  if (!editor || !lastStartPos) return;
+  const endPos = new vscode.Position(
+    lastStartPos.line + lastLines.length,
+    0
   );
 
-  if (isCompletion) {
-    // → insertion après suppression de la ligne
-    return [ new vscode.InlineCompletionItem(replacement, fullLineRange) ];
-  } else {
-    // → remplacement multi-lignes
-    const startPos = new vscode.Position(startLine, 0);
-    const endPos   = new vscode.Position(
-      endLine,
-      document.lineAt(endLine).text.length
-    );
-    const range = new vscode.Range(startPos, endPos);
-    return [ new vscode.InlineCompletionItem(replacement, range) ];
-  }
-}
+  await editor.edit(eb => {
+    eb.delete(new vscode.Range(lastStartPos, endPos));
+    eb.insert(lastStartPos, lastLines.join('\n'));
+  });
 
-/**
- * Enregistre le provider inline.
- */
-function registerSuggestionProvider(context) {
-  const provider = vscode.languages.registerInlineCompletionItemProvider(
-    { pattern: '**/*' },
-    { provideInlineCompletionItems }
+  clearAll(editor);
+  lastEditor = null;
+  lastStartPos = null;
+  lastLines = [];
+  lastColor = '';
+
+  // Désactive le context
+  await vscode.commands.executeCommand(
+    'setContext',
+    'ghostSuggestionVisible',
+    false
   );
-  context.subscriptions.push(provider);
 }
 
-module.exports = { registerSuggestionProvider };
+function suggestSet(editor) {
+  if (!editor) return;
+
+  // Prépare le ghost…
+  const pythonAdd = ['def add(a, b):', '    return a + b'];
+  const startPos  = new vscode.Position(0, 0);
+  const color     = 'rgba(128,128,128,0.5)';
+
+  applyGhost(editor, startPos, pythonAdd, color);
+
+  lastEditor   = editor;
+  lastStartPos = startPos;
+  lastLines    = pythonAdd;
+  lastColor    = color;
+
+  // Active le context pour le keybinding
+  vscode.commands.executeCommand(
+    'setContext',
+    'ghostSuggestionVisible',
+    true
+  );
+}
+
+module.exports = { suggestSet, acceptSuggestion };

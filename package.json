@@ -9,7 +9,8 @@
   "activationEvents": [
     "onStartupFinished",
     "onLanguage:*",
-    "onCommand:sel-ide.testRequest"
+    "onCommand:sel-ide.testRequest",
+    "onCommand:extension.acceptSuggestion"        
   ],
   "main": "./extension.js",
   "contributes": {
@@ -43,7 +44,7 @@
         },
         "selIDE.temperature": {
           "type": "number",
-          "default": 0.2,
+          "default": 0.5,
           "description": "Contrôle la créativité (0–2)"
         }
       }
@@ -52,6 +53,17 @@
       {
         "command": "sel-ide.testRequest",
         "title": "Sel IDE: Test API Request"
+      },
+      {
+        "command": "extension.acceptSuggestion",    
+        "title": "Accept Ghost Suggestion"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "extension.acceptSuggestion",
+        "key": "tab",
+        "when": "editorTextFocus && ghostSuggestionVisible"
       }
     ]
   },

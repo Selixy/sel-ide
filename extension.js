@@ -1,39 +1,23 @@
-// Charge .env si présent
-const path   = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+// extension.js
+const vscode = require('vscode');
+const { registerTrigger } = require('./providers/triggerSuggestion');
+const { suggestSet, acceptSuggestion } = require('./providers/suggestion');
+const { clearAll } = require('./providers/decorationProvider');
 
-const vscode                       = require('vscode');
-const { registerSuggestionProvider } = require('./providers/suggestion');
-
-let idleTimer;
-
-/**
- * Activation de l’extension : timer et provider centralized.
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
-  const getDelay = () =>
-    vscode.workspace.getConfiguration('selIDE').get('idleDelay', 250);
+  // onIdle      = suggestSet
+  // onActivity  = clearAll
+  registerTrigger(context, suggestSet, clearAll);
 
-  // 1) Timer pour déclencher inline-suggest après inactivité
+  // Commande “Accept Suggestion”
   context.subscriptions.push(
-    vscode.workspace.onDidChangeTextDocument(() => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        vscode.commands.executeCommand('editor.action.inlineSuggest.trigger');
-      }, getDelay());
-    })
+    vscode.commands.registerCommand(
+      'extension.acceptSuggestion',
+      acceptSuggestion
+    )
   );
-
-  // 2) Enregistre le provider unique défini dans providers/suggestion.js
-  registerSuggestionProvider(context);
 }
 
-/**
- * Nettoyage à la désactivation.
- */
-function deactivate() {
-  clearTimeout(idleTimer);
-}
+function deactivate() {}
 
 module.exports = { activate, deactivate };

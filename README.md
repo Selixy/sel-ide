@@ -92,9 +92,5 @@
 
 ---
 
-> 📝 **Rédaction en Markdown**  
-> Utilisez les raccourcis VS Code pour éditer et prévisualiser ce fichier :  
-> - Split editor: `Ctrl+\`  
-> - Toggle preview: `Ctrl+Shift+V`
 
 **Bon codage avec sel-ide !**
