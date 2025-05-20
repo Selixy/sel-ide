@@ -1,29 +1,23 @@
 const vscode = require('vscode');
 const { applyGhost, clearAll } = require('./decorationProvider');
+const { generateCompletion }   = require('../test/testGeneration');
+const { collectContext }       = require('./contextCollector');
 
 // État mémorisé...
-let lastEditor, lastStartPos, lastLines, lastColor;
+let lastEditor, lastStartPos, lastEndPos, lastLines;
 
 async function acceptSuggestion() {
   const editor = lastEditor;
-  if (!editor || !lastStartPos) return;
-  const endPos = new vscode.Position(
-    lastStartPos.line + lastLines.length,
-    0
-  );
+  if (!editor || !lastStartPos || !lastEndPos) return;
 
   await editor.edit(eb => {
-    eb.delete(new vscode.Range(lastStartPos, endPos));
+    eb.delete(new vscode.Range(lastStartPos, lastEndPos));
     eb.insert(lastStartPos, lastLines.join('\n'));
   });
 
   clearAll(editor);
-  lastEditor = null;
-  lastStartPos = null;
-  lastLines = [];
-  lastColor = '';
+  lastEditor = lastStartPos = lastEndPos = lastLines = null;
 
-  // Désactive le context
   await vscode.commands.executeCommand(
     'setContext',
     'ghostSuggestionVisible',
@@ -31,23 +25,29 @@ async function acceptSuggestion() {
   );
 }
 
-function suggestSet(editor) {
+async function suggestSet(editor) {
   if (!editor) return;
 
-  // Prépare le ghost…
-  const pythonAdd = ['def add(a, b):', '    return a + b'];
-  const startPos  = new vscode.Position(0, 0);
-  const color     = 'rgba(128,128,128,0.5)';
+  // 1) Contexte complet
+  const ctx = await collectContext(
+    editor.document,
+    editor.selection.active
+  );
 
-  applyGhost(editor, startPos, pythonAdd, color);
+  // 2) Appel de l’API (stub)
+  const { startPos, endPos, replacement } = await generateCompletion(ctx);
 
+  // 3) Affichage du ghost
+  const lines = replacement.split('\n');
+  applyGhost(editor, startPos, lines, 'rgba(128,128,128,0.5)');
+
+  // 4) Mémorisation pour l’acceptation
   lastEditor   = editor;
   lastStartPos = startPos;
-  lastLines    = pythonAdd;
-  lastColor    = color;
+  lastEndPos   = endPos;
+  lastLines    = lines;
 
-  // Active le context pour le keybinding
-  vscode.commands.executeCommand(
+  await vscode.commands.executeCommand(
     'setContext',
     'ghostSuggestionVisible',
     true

@@ -1,39 +1,34 @@
 // providers/contextCollector.js
+const path   = require('path');
 const vscode = require('vscode');
-const path = require('path');
 
 /**
- * Récupère le contexte local du fichier et du curseur
- * @param {vscode.TextDocument} document
- * @param {vscode.Position} position
- * @returns {{
- *   fileName: string,
- *   relativePath: string,
- *   languageId: string,
- *   fullText: string,
- *   cursorLine: number,
- *   cursorCharacter: number,
- *   lineCount: number
- * }}
+ * @typedef {Object} CompletionContext
+ * @property {string} fileName      Nom du fichier (ex. "index.js")
+ * @property {string} relativePath  Chemin workspace-relatif
+ * @property {string} languageId    Langage du document ("javascript", "python", …)
+ * @property {string} fullText      Contenu intégral du document
+ * @property {number} lineCount     Nombre total de lignes
+ * @property {number} cursorLine    Ligne du curseur (0-based)
+ * @property {number} cursorChar    Colonne du curseur (0-based)
  */
-function collectContext(document, position) {
-  const fileName        = path.basename(document.fileName);
-  const relativePath    = vscode.workspace.asRelativePath(document.uri);
-  const languageId      = document.languageId;
-  const fullText        = document.getText();
-  const cursorLine      = position.line;
-  const cursorCharacter = position.character;
-  const lineCount       = document.lineCount;
 
-  return {
-    fileName,
-    relativePath,
-    languageId,
-    fullText,
-    cursorLine,
-    cursorCharacter,
-    lineCount // ← maintenant accessible dans generationAPI.js
-  };
+/**
+ * Récupère tout le contexte utile à la génération.
+ * @param {vscode.TextDocument} document
+ * @param {vscode.Position}     position
+ * @returns {Promise<CompletionContext>}
+ */
+async function collectContext(document, position) {
+  const fileName     = path.basename(document.fileName);
+  const relativePath = vscode.workspace.asRelativePath(document.fileName);
+  const languageId   = document.languageId;
+  const fullText     = document.getText();
+  const lineCount    = document.lineCount;
+  const cursorLine   = position.line;
+  const cursorChar   = position.character;
+
+  return { fileName, relativePath, languageId, fullText, lineCount, cursorLine, cursorChar };
 }
 
 module.exports = { collectContext };
